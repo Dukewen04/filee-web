@@ -1,0 +1,10 @@
+.git
+node_modules
+**/bin
+**/obj
+**/.git
+vendor/filee/engines
+server/engines
+server/publish
+output
+.env*
