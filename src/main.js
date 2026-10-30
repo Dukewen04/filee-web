@@ -42,6 +42,12 @@ function setCategory(key) {
   if(key==='engine'&&!engine.connected){$('#engine-settings').hidden=false;$('#engine-settings').scrollIntoView({behavior:'smooth',block:'nearest'});toast('先连接 Filee 转换服务，再选择原版引擎模式');return;}
   category=key;
   const remote=key==='engine';
+  $('#background').closest('label').hidden=remote;
+  $('#merge').closest('label').hidden=remote;
+  $('#settings>.muted').hidden=remote;
+  $('#engine-ocr').closest('label').hidden=!remote;
+  $('#engine-language').closest('label').hidden=!remote;
+  $('#width').parentElement.firstChild.textContent=remote?'图片宽度（像素）':'最大宽度（像素，不放大）';
   $('.privacy-pill').innerHTML=icon(remote?'sparkles':'lock-keyhole')+(remote?'Filee 原版引擎 · 服务端处理':'无需上传 · 无需注册');
   $('.local-card strong').textContent=remote?'原版引擎，完整格式库':'你的文件，只属于你';
   $('.local-status').innerHTML='<b></b>'+(remote?'转换服务已连接':'本地处理已就绪');
@@ -57,6 +63,7 @@ function setCategory(key) {
   renderQueue();
 }
 async function addFiles(files) {
+  const initialCategory=category;
   if (busy) return toast('转换过程中请稍候');
   for (const file of files) {
     if (queue.length>=30) { toast('每批最多 30 个文件'); break; }
@@ -64,6 +71,8 @@ async function addFiles(files) {
     if(category==='engine'){
       try {const route=await engine.prepare(file,$('#engine-ocr').checked);if(route.source&&!route.targets.some(t=>t.available)){toast(file.name+'：需要安装额外引擎，当前服务无法转换此文件');continue;}}catch(error){toast(error.message);continue;}
     }
+    if(category!==initialCategory||busy)return toast('处理模式已改变，请重新添加文件');
+    if(queue.length>=30||queue.reduce((n,i)=>n+i.file.size,0)+file.size>150*1048576)return toast('当前队列已达到文件数量或大小上限');
     const group=category==='engine'?'engine':groupFor(file);
     if (category!=='archive' && category!=='engine' && (!group || (category!=='all' && group!==category))) { toast(`${file.name}：当前类别不支持此格式，可用 ZIP 模式打包`); continue; }
     queue.push({id:crypto.randomUUID(),file,group,to:targets(file,category)[0],status:'ready'});
@@ -130,6 +139,7 @@ app.addEventListener('click',async event=>{
   switch(button.dataset.action) {
     case 'engine-settings':$('#engine-settings').hidden=!$('#engine-settings').hidden;if(!$('#engine-settings').hidden)$('#engine-settings').scrollIntoView({behavior:'smooth',block:'nearest'});break;
     case 'connect-engine': {
+      if(busy||queue.length){toast('请先完成转换并清空队列，再更改转换服务');break;}
       button.disabled=true;$('#engine-status').textContent='正在检查转换服务与引擎…';
       try{const caps=await engine.connect($('#engine-url').value,$('#engine-token').value);const ready=caps.engines.filter(e=>e.available);$('#engine-status').innerHTML=`<p>已连接：${caps.formats.length} 个注册格式，${ready.length}/${caps.engines.length} 个引擎可用。</p>`+caps.engines.map(e=>`<span class="engine-badge ${e.available?'success':'error'}">${escape(e.name)} · ${e.available?'可用':'未就绪'}</span>`).join('');if(!queue.length)setCategory('engine');toast('已连接原版 Filee 引擎');}catch(error){$('#engine-status').textContent=error.message;toast(error.message);}finally{button.disabled=false;}break;
     }
@@ -160,5 +170,7 @@ refreshIcons();
 
 $('#engine-ocr').addEventListener('change',async()=>{if(category!=='engine'||busy)return;for(const item of queue){try{await engine.prepare(item.file,$('#engine-ocr').checked);if(!targets(item.file,category).includes(item.to))item.to=targets(item.file,category)[0];item.result=null;item.status='ready';}catch(error){toast(error.message);}}renderQueue();});
 
+$('#engine-ocr').closest('label').hidden=true;
+$('#engine-language').closest('label').hidden=true;
 $('#engine-url').value=import.meta.env.VITE_FILEE_API||location.origin;
 if(import.meta.env.VITE_FILEE_SERVER==='1'||import.meta.env.VITE_FILEE_API){$('#engine-token').value='';document.querySelector('[data-action="connect-engine"]').click();}

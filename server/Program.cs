@@ -41,14 +41,14 @@ if (args.Contains("--worker"))
     preset.Pdf.OcrLanguage = request.Options.Language;
     var job = new ConversionJob(request.Sources, preset, "Web conversion");
     await queue.RunAsync(job);
-    Console.WriteLine(JsonSerializer.Serialize(job.Files.Select(f => new { name = Path.GetFileName(f.SourcePath), state = f.State.ToString(), error = f.ErrorKey, detail = f.ErrorDetail, outputs = f.Outputs, missingFonts = f.MissingFonts })));
+    Console.WriteLine(JsonSerializer.Serialize(job.Files.Select(f => new { name = Path.GetFileName(f.SourcePath), state = f.State.ToString(), error = f.ErrorKey })));
     return;
 }
 
 var builder = WebApplication.CreateBuilder(args);
 builder.WebHost.UseUrls(Environment.GetEnvironmentVariable("ASPNETCORE_URLS") ?? "http://127.0.0.1:8080");
 builder.WebHost.ConfigureKestrel(o => o.Limits.MaxRequestBodySize = 155L * 1024 * 1024);
-builder.Services.Configure<FormOptions>(o => { o.MultipartBodyLengthLimit = 150L * 1024 * 1024; o.ValueLengthLimit = 8192; });
+builder.Services.Configure<FormOptions>(o => { o.MultipartBodyLengthLimit = 150L * 1024 * 1024; o.ValueLengthLimit = 8192; o.ValueCountLimit = 64; });
 var origins = (Environment.GetEnvironmentVariable("FILEE_ORIGINS") ?? "https://dukewen04.github.io,http://127.0.0.1:8080,http://localhost:8080").Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
 builder.Services.AddCors(o => o.AddDefaultPolicy(p => p.WithOrigins(origins).WithHeaders("Authorization", "Content-Type").WithMethods("GET", "POST").WithExposedHeaders("Content-Disposition", "X-Filee-Results")));
 builder.Services.AddRateLimiter(options => {
@@ -95,9 +95,9 @@ app.MapGet("/api/routes", (string name, bool? ocr) => {
 app.MapPost("/api/convert", async (HttpContext context) => {
     if (!await capacity.WaitAsync(0, context.RequestAborted)) return Results.Json(new {error = "转换服务繁忙，请稍后重试"}, statusCode: 503);
     var dir = Path.Combine(root, Guid.NewGuid().ToString("N"));
-    Directory.CreateDirectory(dir);
     try
     {
+        Directory.CreateDirectory(dir);
         if (!context.Request.HasFormContentType) return Results.BadRequest(new {error = "需要 multipart/form-data 文件"});
         var form = await context.Request.ReadFormAsync(context.RequestAborted);
         var target = form["target"].ToString().ToLowerInvariant();
@@ -157,7 +157,7 @@ app.MapPost("/api/convert", async (HttpContext context) => {
     }
     catch (BadHttpRequestException) { return Results.BadRequest(new {error = "上传请求无效或超过大小限制"}); }
     catch (InvalidDataException) { return Results.BadRequest(new {error = "文件请求格式错误"}); }
-    finally { try { Directory.Delete(dir,true); } catch (IOException) { } capacity.Release(); }
+    finally { try { Directory.Delete(dir,true); } catch (Exception error) when (error is IOException or UnauthorizedAccessException) { } finally { capacity.Release(); } }
 }).DisableAntiforgery().RequireRateLimiting("conversion");
 var webRoot = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,"wwwroot"));
 if (Directory.Exists(webRoot)) { app.UseDefaultFiles(new DefaultFilesOptions { FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRoot) }); app.UseStaticFiles(new StaticFileOptions { FileProvider = new Microsoft.Extensions.FileProviders.PhysicalFileProvider(webRoot) }); }

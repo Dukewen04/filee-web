@@ -65,4 +65,4 @@ FILEE_TEST_TOKEN=your-local-token npm run test:engine
 
 纯前端测试：`npm test`。引擎集成测试调用真实服务，检查 PDF→Word 的可编辑正文、表格、嵌入图片、Word→PDF、扫描件 OCR、CSV→XLSX、字幕和数据转换，以及鉴权、路径校验和 CORS。测试要求当前平台安装适用引擎。
 
-本机没有 Docker，因此 Docker 镜像尚未实构和验证；.NET 服务、网页连接与上述实际转换在 macOS 上验证。公开发布必须在目标容器/Windows 主机完成部署验证。
+Linux x64 Docker 镜像已在 GitHub Actions 中实构，并通过隔离容器内的真实引擎集成测试；macOS 本机也验证了 .NET 服务、网页连接与上述转换。完整公开服务仍需目标托管账号、HTTPS 入口和部署后的线上验证。
