@@ -1,13 +1,15 @@
+import { engine } from './engine.js';
 import { ext, stem, dataConvert, pageSelection } from './data.js';
 export const groups = {
+  engine: { name: 'Filee 原版引擎', icon: 'sparkles', color: 'purple', inputs: [], outputs: [], hint: '使用原版 Filee 引擎转换全部注册格式。文件将发送到你连接的转换服务，结果下载后临时文件自动删除。可用格式取决于已安装引擎。' },
   image: { name: '图片转换', icon: 'image', color: 'purple', inputs: ['jpg','jpeg','png','webp','avif','gif','bmp','svg'], outputs: ['png','jpg','webp','pdf'], hint: 'JPG、PNG、WebP 互转，调整尺寸和质量。GIF 仅取第一帧；AVIF 取决于浏览器。' },
   pdf: { name: 'PDF 工具', icon: 'file-text', color: 'red', inputs: ['pdf'], outputs: ['png','jpg','txt','pdf'], hint: '导出图片、提取文字、选择页码。多个 PDF 可按队列顺序合并；扫描件不支持 OCR。' },
   document: { name: '文档提取', icon: 'file-type', color: 'blue', inputs: ['docx','txt','md','html','htm'], outputs: ['txt'], hint: '提取 DOCX / HTML 中的文字，或将文本转为 UTF-8 TXT。原文档排版和图片不会保留。' },
   data: { name: '数据转换', icon: 'table-2', color: 'green', inputs: ['csv','tsv','json','yaml','yml'], outputs: ['json','csv','tsv','yaml'], hint: 'CSV、TSV、JSON、YAML 互转。转表格需要对象数组；CSV 第一行为列名。' },
   archive: { name: 'ZIP 打包', icon: 'archive', color: 'orange', inputs: [], outputs: ['zip'], hint: '任意文件合并为一个 ZIP 压缩包。同名文件自动编号，原文件保持不变。' }
 };
-export function groupFor(file) { return Object.keys(groups).find(key => key !== 'archive' && groups[key].inputs.includes(ext(file.name))); }
-export function targets(file, category) { const group = category === 'archive' ? 'archive' : groupFor(file); return group ? groups[group].outputs : []; }
+export function groupFor(file) { return Object.keys(groups).find(key => key !== 'archive' && key !== 'engine' && groups[key].inputs.includes(ext(file.name))); }
+export function targets(file, category) { if (category==='engine') return [...engine.targets(file), 'companion']; const group = category === 'archive' ? 'archive' : groupFor(file); return group ? groups[group].outputs : []; }
 export async function zipFiles(entries) {
   const { zip } = await import('fflate');
   return new Promise((resolve, reject) => zip(Object.fromEntries(entries), {level: 6}, (error, data) => error ? reject(error) : resolve(new Blob([data], {type:'application/zip'}))));

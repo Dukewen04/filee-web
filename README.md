@@ -1,10 +1,10 @@
 # Filee Web
 
-一个中文、纯浏览器本地处理的文件转换工作台，灵感来自 [KnifeLemon/Filee](https://github.com/KnifeLemon/Filee)。这是独立实现的网页版，并非官方 Filee 产品，也未移植其桌面转换引擎。
+一个中文、纯浏览器本地处理的文件转换工作台，灵感来自 [KnifeLemon/Filee](https://github.com/KnifeLemon/Filee)。这不是官方 Filee 产品。`codex/full-engine` 分支已接入原版 Filee 引擎的 Web 服务层，部署与格式覆盖边界见 [DEPLOYMENT.md](DEPLOYMENT.md)。原版源码以固定版本 Git submodule 保留在 `vendor/filee`。
 
-文件不上传服务器，不需要账户。没有分析统计，也不加载第三方字体或运行时 CDN 脚本。批量队列、单独选择格式、图片质量/宽度、PDF 页码、合并和结果 ZIP 下载均可使用。
+浏览器内置模式不上传文件；原版引擎模式将文件上传至连接的转换后端，转换结束清理临时文件。没有分析统计，也不加载第三方字体或运行时 CDN 脚本。批量队列、单独选择格式、图片质量/宽度、PDF 页码、合并和结果 ZIP 下载均可使用。
 
-## 支持的转换
+## 浏览器内置模式支持的转换
 
 | 输入 | 输出 | 说明 |
 | --- | --- | --- |
@@ -16,7 +16,7 @@
 
 限制：单文件 50 MB，每批最多 30 个、共 150 MB。图片处理不超过 4000 万像素。加密/损坏文件会显示错误。复杂 PDF、超大图片、内存不足或浏览器不支持的图片编码可能无法转换。PDF 页码支持 `1, 3-5`，合并时应用于每份 PDF。视频、音频、XLSX、PPTX 和完整 Office 排版转换尚未实现。
 
-转换结果仅保存在当前页面内存中，刷新/关闭前请下载；原文件不会修改。
+转换结果下载到当前页面内存中，刷新/关闭前请保存；原文件不会修改。原版引擎模式的输入输出还会经过转换服务器，页面会明确提示当前处理位置。
 
 ## 开发
 
@@ -48,4 +48,4 @@ npm run build
 
 ## 致谢与许可证
 
-交互理念参考 MIT 开源项目 [Filee](https://github.com/KnifeLemon/Filee)，桌面版支持更广泛的格式和系统集成。本项目源码采用 MIT。运行依赖各自遵循其许可证，详见 `THIRD_PARTY_NOTICES.md`。
+界面与引擎复用 MIT 开源项目 [Filee](https://github.com/KnifeLemon/Filee)，桌面版支持更广泛的格式和系统集成。本项目源码采用 MIT。运行依赖各自遵循其许可证，详见 `THIRD_PARTY_NOTICES.md`。

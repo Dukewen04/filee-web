@@ -1,6 +1,6 @@
 # Third-party notices
 
-Filee Web references the interaction concept of [KnifeLemon/Filee](https://github.com/KnifeLemon/Filee) (MIT), without copying its source code or assets.
+Filee Web references the interaction concept of [KnifeLemon/Filee](https://github.com/KnifeLemon/Filee) (MIT), and directly uses its engine source through the pinned `vendor/filee` Git submodule. Filee is MIT licensed; retain `vendor/filee/LICENSE` and its `THIRD-PARTY-NOTICES.md` when redistributing the backend.
 
 Runtime dependencies and transitive license texts:
 

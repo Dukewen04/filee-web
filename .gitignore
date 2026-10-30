@@ -3,3 +3,9 @@ dist/
 .DS_Store
 
 preview.png
+
+**/bin/
+**/obj/
+server/publish/
+.env*
+server/engines/

@@ -1,0 +1,49 @@
+name: Full engine container checks
+on:
+  push:
+    branches: [codex/full-engine]
+  pull_request:
+    branches: [main]
+permissions:
+  contents: read
+concurrency:
+  group: engine-${{ github.head_ref || github.ref_name }}
+  cancel-in-progress: true
+jobs:
+  docker-integration:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v7.0.1
+        with:
+          submodules: recursive
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Build actual Linux engine image
+        run: docker build -t filee-web:test .
+      - name: Run isolated service
+        run: >-
+          docker run -d --name filee-engine --read-only
+          --tmpfs /tmp:size=2g,mode=1777 --memory=3g --cpus=2 --pids-limit=256
+          --cap-drop=ALL --security-opt=no-new-privileges:true
+          -e FILEE_API_TOKEN=filee-test-token -p 127.0.0.1:8080:7860 filee-web:test
+      - name: Wait for health
+        run: |
+          for attempt in $(seq 1 45); do
+            if curl --fail --silent http://127.0.0.1:8080/health; then exit 0; fi
+            sleep 2
+          done
+          docker logs filee-engine
+          exit 1
+      - name: Test real conversions and request boundaries
+        run: npm run test:engine
+      - name: Show logs on failure
+        if: failure()
+        run: docker logs filee-engine || true
+      - name: Stop service
+        if: always()
+        run: docker rm -f filee-engine || true

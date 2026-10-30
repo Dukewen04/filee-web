@@ -1,0 +1,20 @@
+services:
+  filee:
+    platform: linux/amd64
+    build: .
+    ports:
+      - "127.0.0.1:7860:7860"
+    environment:
+      FILEE_PUBLIC: "1"
+      FILEE_ORIGINS: "http://127.0.0.1:7860,http://localhost:7860,https://dukewen04.github.io"
+    read_only: true
+    tmpfs:
+      - /tmp:size=2g,mode=1777
+    mem_limit: 3g
+    cpus: 2
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
